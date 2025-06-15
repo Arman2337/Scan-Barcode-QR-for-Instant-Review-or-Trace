@@ -38,6 +38,48 @@ app.use('/api/products', reviewRoutes);      // /api/products/:productId/reviews
 // ✅ Error handler last
 app.use(errorHandler);
 
+
+app.get('/api/upcitemdb/:barcode', async (req, res) => {
+    const { barcode } = req.params;
+    
+    try {
+        const productData = await lookupUPCitemDB(barcode);
+        res.json({
+            success: true,
+            data: productData
+        });
+    } catch (error) {
+        console.error('UPCitemDB lookup failed:', error.message);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// UPCitemDB API implementation
+async function lookupUPCitemDB(barcode) {
+    const url = `https://api.upcitemdb.com/prod/trial/lookup`;
+    
+    const params = {
+        upc: barcode
+    };
+
+    const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    };
+
+    const response = await axios.get(url, { params, headers });
+    
+    if (response.data.code !== 'OK' || !response.data.items || response.data.items.length === 0) {
+        throw new Error(response.data.message || 'Product not found in UPCitemDB database');
+    }
+    
+    // Return the first matching item
+    return response.data.items[0];
+}
+
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
