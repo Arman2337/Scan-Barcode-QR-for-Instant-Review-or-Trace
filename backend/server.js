@@ -4,7 +4,7 @@ import cookieParser from "cookie-parser";
 import dotenv from 'dotenv';
 import connectDB from './src/config/db.js';
 import { errorHandler } from './src/middleware/errorMiddleware.js';
-
+import axios from 'axios'; 
 import productRoutes from './src/routes/productRoutes.js';
 import reviewRoutes from './src/routes/reviewRoutes.js';
 
@@ -34,6 +34,34 @@ app.get("/", (req, res) => {
 // ✅ Mount routes
 app.use('/api/products', productRoutes);     // /api/products/:code or POST /
 app.use('/api/products', reviewRoutes);      // /api/products/:productId/reviews
+
+app.get('/api/image-proxy', async (req, res) => {
+    const imageUrl = req.query.url;
+
+    if (!imageUrl) {
+        return res.status(400).send('Image URL is required');
+    }
+
+    try {
+        const response = await axios.get(imageUrl, {
+            responseType: 'arraybuffer',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+                'Accept': 'image/*,*/*;q=0.8',
+                'Referer': 'https://www.newegg.com/', // optional spoofing
+            },
+        });
+
+        const contentType = response.headers['content-type'] || 'image/jpeg';
+        res.set('Content-Type', contentType);
+        res.send(response.data);
+    } catch (error) {
+        // console.error('Image proxy error:', error.message);
+        console.error('Image proxy error:', error.response?.status, error.response?.statusText);
+
+        res.status(500).send('Failed to load image');
+    }
+});
 
 // ✅ Error handler last
 app.use(errorHandler);

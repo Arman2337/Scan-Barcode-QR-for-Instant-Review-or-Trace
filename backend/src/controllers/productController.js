@@ -129,31 +129,43 @@ export const getProductByCode = asyncHandler(async (req, res) => {
     }
   }
 
-  // --- Fallback 3: EANData API ---
-  // if (!externalProduct) {
-  //   try {
-  //     const eanRes = await axios.get(`https://api.ean-data.com/products?key=YOUR_API_KEY&ean=${code}`);
-  //     const item = eanRes.data?.product;
-  //     if (item) {
-  //       externalProduct = {
-  //         name: item.name || 'Unknown',
-  //         brand: item.brand || 'Unknown',
-  //         origin: 'N/A',
-  //         description: item.description || 'No description',
-  //         barcode: code,
-  //         ingredients: 'N/A',
-  //         sustainabilityData: 'Not Available',
-  //         manufacturingDate: 'N/A',
-  //         expiryDate: 'N/A',
-  //         qrCode: null,
-  //         images: [item.image || ''],
-  //         source: 'EANData'
-  //       };
-  //     }
-  //   } catch (err) {
-  //     console.error('EANData failed:', err.message);
-  //   }
-  // }
+  // --- Fallback 3: Barcode Lookup API (RapidAPI) ---
+if (!externalProduct) {
+  try {
+    const options = {
+      method: 'GET',
+      url: 'https://barcodes-lookup.p.rapidapi.com/',
+      params: { barcode: code },
+      headers: {
+        'X-RapidAPI-Key': '720a59e0e8mshff11786c54b7e50p1a87b7jsn496518d5b0cd',
+        'X-RapidAPI-Host': 'barcodes-lookup.p.rapidapi.com'
+      }
+    };
+
+    const barcodeRes = await axios.request(options);
+    const item = barcodeRes.data?.product;
+
+    if (item) {
+      externalProduct = {
+        name: item.name || 'Unknown',
+        brand: item.brand || item.manufacturer || 'Unknown',
+        origin: item.country || 'N/A',
+        description: item.description || 'No description',
+        barcode: item.barcode_number || code,
+        ingredients: item.ingredients || 'N/A',
+        sustainabilityData: 'Not Available',
+        manufacturingDate: 'N/A',
+        expiryDate: 'N/A',
+        qrCode: null,
+        images: item.images || [],
+        source: 'Barcode Lookup'
+      };
+    }
+  } catch (err) {
+    console.error('Barcode Lookup API failed:', err.message);
+  }
+}
+
 
   // Final response
   if (externalProduct) {
