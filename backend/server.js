@@ -8,6 +8,8 @@ import axios from 'axios';
 import productRoutes from './src/routes/productRoutes.js';
 import reviewRoutes from './src/routes/reviewRoutes.js';
 
+import Product from './src/models/product.js';
+
 dotenv.config();
 connectDB();
 
@@ -69,12 +71,36 @@ app.use(errorHandler);
 
 app.get('/api/upcitemdb/:barcode', async (req, res) => {
     const { barcode } = req.params;
+
     
+
+
+
     try {
-        const productData = await lookupUPCitemDB(barcode);
+        // 1. Check local database first
+        const product = await Product.findOne({ barcode });
+
+        if (product) {
+            // 2. If found, return from database
+            return res.json({
+                success: true,
+                data: product
+            });
+        }
+
+        // 3. If not found, fetch from UPCitemDB
+        const productData = await lookupUPCitemDB(req.params.barcode);
+
+        // 4. Store in your database
+        product = new Product({
+            barcode,
+            ...productData
+               });
+        await product.save();
+
         res.json({
             success: true,
-            data: productData
+            data: product
         });
     } catch (error) {
         console.error('UPCitemDB lookup failed:', error.message);
@@ -84,6 +110,10 @@ app.get('/api/upcitemdb/:barcode', async (req, res) => {
         });
     }
 });
+    
+    
+    
+    
 
 // UPCitemDB API implementation
 async function lookupUPCitemDB(barcode) {
