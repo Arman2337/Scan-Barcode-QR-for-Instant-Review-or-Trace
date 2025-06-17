@@ -8,6 +8,8 @@ import axios from 'axios';
 import productRoutes from './src/routes/productRoutes.js';
 import reviewRoutes from './src/routes/reviewRoutes.js';
 
+import Product from './src/models/product.js';
+
 dotenv.config();
 connectDB();
 
@@ -66,6 +68,77 @@ app.get('/api/image-proxy', async (req, res) => {
 // ✅ Error handler last
 app.use(errorHandler);
 
+
+app.get('/api/upcitemdb/:barcode', async (req, res) => {
+    const { barcode } = req.params;
+
+    
+
+
+
+    try {
+        // 1. Check local database first
+        const product = await Product.findOne({ barcode });
+
+        if (product) {
+            // 2. If found, return from database
+            return res.json({
+                success: true,
+                data: product
+            });
+        }
+
+        // 3. If not found, fetch from UPCitemDB
+        const productData = await lookupUPCitemDB(req.params.barcode);
+
+        // 4. Store in your database
+        product = new Product({
+            barcode,
+            ...productData
+               });
+        await product.save();
+
+        res.json({
+            success: true,
+            data: product
+        });
+    } catch (error) {
+        console.error('UPCitemDB lookup failed:', error.message);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+    
+    
+    
+    
+
+// UPCitemDB API implementation
+async function lookupUPCitemDB(barcode) {
+    const url = `https://api.upcitemdb.com/prod/trial/lookup`;
+    
+    const params = {
+        upc: barcode
+    };
+
+    const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    };
+
+    const response = await axios.get(url, { params, headers });
+    
+    if (response.data.code !== 'OK' || !response.data.items || response.data.items.length === 0) {
+        throw new Error(response.data.message || 'Product not found in UPCitemDB database');
+    }
+    
+    // Return the first matching item
+    return response.data.items[0];
+}
+
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
+//pull request not send 
