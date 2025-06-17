@@ -211,3 +211,40 @@ export const getAllProducts = asyncHandler(async (req, res) => {
   const products = await Product.find();
   res.status(200).json(products);
 });
+
+
+export const updateProduct = asyncHandler(async (req, res) => {
+  const { name, brand, barcode, sustainability, image } = req.body;
+
+  const product = await Product.findById(req.params.id);
+
+  if (!product) {
+    res.status(404);
+    throw new Error('Product not found');
+  }
+
+  // ✅ Update fields (including image)
+  product.name = name || product.name;
+  product.brand = brand || product.brand;
+  product.barcode = barcode || product.barcode;
+  product.sustainability = sustainability || product.sustainability;
+  product.image = image || product.image; // ✅ Make sure image is updated
+
+  const updatedProduct = await product.save();
+
+  res.json(updatedProduct);
+});
+
+
+export const deleteProduct = asyncHandler(async (req, res) => {
+  const product = await Product.findById(req.params.id);
+
+  if (!product) {
+    res.status(404);
+    throw new Error('Product not found');
+  }
+
+  await product.remove();
+
+  res.json({ message: 'Product deleted successfully' });
+});

@@ -6,6 +6,7 @@ import NotFound from './pages/NotFound';
 import AdminDashboard from './pages/AdminDashboard';
 import Layout from './components/Layout';
 // import NotFound from './pages/NotFound';
+import AllProducts from "./pages/AllProducts";
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="/product/:code" element={<ProductDetails />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/not-found" element={<NotFound />} />
+          <Route path="/all-products" element={<AllProducts />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Layout>

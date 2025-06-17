@@ -26,7 +26,7 @@ const productSchema = new mongoose.Schema({
   manufacturingDate: Date,
   expiryDate: Date,
   qrCode: String,
-  images: [String],
+  image: { type: String },
   createdAt: {
     type: Date,
     default: Date.now
